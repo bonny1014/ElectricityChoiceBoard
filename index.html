@@ -549,21 +549,21 @@
             
             return `
                 <div class="min-h-screen bg-gradient-to-br from-orange-100 via-blue-100 to-orange-50 font-sans pb-12">
-                    <div class="${task.color} py-12 md:py-16 flex items-center justify-center relative border-b-8 ${borderColor}">
+                    <div class="${task.color} py-16 md:py-16 flex items-center justify-center relative border-b-8 ${borderColor}">
                         <button 
                             onclick="setActiveTask(null)"
-                            class="absolute top-6 left-6 bg-white text-slate-900 p-4 rounded-2xl shadow-xl hover:bg-slate-100 transition-all hover:scale-110 active:scale-95 z-20 border-4 border-slate-900 font-black">
+                            class="absolute top-4 left-4 md:top-6 md:left-6 bg-white text-slate-900 p-3 md:p-4 rounded-2xl shadow-xl hover:bg-slate-100 transition-all hover:scale-110 active:scale-95 z-20 border-4 border-slate-900 font-black text-lg md:text-xl">
                             ←
                         </button>
 
                         <button
                             onclick='handleTaskSelect(${JSON.stringify(task).replace(/'/g, "&apos;")})'
-                            class="absolute top-6 right-6 px-6 py-3 rounded-2xl shadow-xl font-black transition-all hover:scale-110 active:scale-95 z-20 flex items-center gap-2 border-4 ${selected ? 'bg-yellow-300 text-yellow-900 border-yellow-700' : 'bg-white text-slate-900 border-slate-900'}">
+                            class="absolute top-4 right-4 md:top-6 md:right-6 px-4 py-2 md:px-6 md:py-3 rounded-2xl shadow-xl font-black text-sm md:text-base transition-all hover:scale-110 active:scale-95 z-20 flex items-center gap-2 border-4 ${selected ? 'bg-yellow-300 text-yellow-900 border-yellow-700' : 'bg-white text-slate-900 border-slate-900'}">
                             ${selected ? '✓ Selected!' : '⭐ Select Mission'}
                         </button>
 
-                        <div class="text-center px-4 relative z-10">
-                            <div class="text-7xl md:text-9xl mb-4">
+                        <div class="text-center px-4 pt-12 md:pt-0 relative z-10">
+                            <div class="text-6xl md:text-9xl mb-4">
                                 ${task.emoji}
                             </div>
                             <div class="inline-block bg-white px-8 py-3 rounded-full mb-3 border-4 border-slate-900 shadow-lg">
@@ -1123,8 +1123,8 @@
                         <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
                             Study this circuit carefully. There are 3 problems preventing the lightbulb from turning on!
                         </p>
-                        <div class="bg-slate-50 rounded-xl p-4 border-2 border-slate-300 flex justify-center items-center">
-                            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                        <div class="bg-slate-50 rounded-xl p-4 border-2 border-slate-300 flex justify-center items-center overflow-auto">
+                            <svg viewBox="0 0 800 600" class="w-full max-w-full h-auto" style="max-height: 500px;" xmlns="http://www.w3.org/2000/svg">
 <style>
 @media (prefers-color-scheme: dark) {
   .wire { stroke: #c2c0b6; }
