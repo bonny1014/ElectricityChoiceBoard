@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Mission Choice Board - Grade 6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="m-0 p-0">
+    <div id="app"></div>
+
+    <script>
+        // ===== STATE MANAGEMENT =====
+        const AppState = {
+            activeTask: null,
+            selectedTasks: (() => {
+                try {
+                    const saved = localStorage.getItem('electricChallengeSelections');
+                    return saved ? JSON.parse(saved) : { col1: null, col2: null, col3: null };
+                } catch (error) {
+                    return { col1: null, col2: null, col3: null };
+                }
+            })(),
+            checklistState: {}
+        };
+
+        // ===== HELPER FUNCTIONS =====
+        function saveSelections() {
+            try {
+                localStorage.setItem('electricChallengeSelections', JSON.stringify(AppState.selectedTasks));
+            } catch (error) {
+                console.error('Failed to save selections:', error);
+            }
+        }
+
+        function loadChecklist(taskId) {
+            try {
+                const saved = localStorage.getItem(`mission_${taskId}_checklist`);
+                AppState.checklistState = saved ? JSON.parse(saved) : {};
+            } catch (error) {
+                AppState.checklistState = {};
+            }
+        }
+
+        function saveChecklist(taskId) {
+            try {
+                localStorage.setItem(`mission_${taskId}_checklist`, JSON.stringify(AppState.checklistState));
+            } catch (error) {
+                console.error('Failed to save checklist:', error);
+            }
+        }
+
+        function toggleCheckbox(taskId, index) {
+            AppState.checklistState[index] = !AppState.checklistState[index];
+            saveChecklist(taskId);
+            render();
+        }
+
+        function handleTaskSelect(task) {
+            const colKey = `col${task.col}`;
+            AppState.selectedTasks[colKey] = AppState.selectedTasks[colKey] === task.id ? null : task.id;
+            saveSelections();
+            render();
+        }
+
+        function isSelected(task) {
+            return AppState.selectedTasks[`col${task.col}`] === task.id;
+        }
+
+        function getCompletionCount() {
+            return Object.values(AppState.selectedTasks).filter(v => v !== null).length;
+        }
+
+        function handleReset() {
+            if (confirm('Are you sure you want to clear all your choices? This cannot be undone!')) {
+                AppState.selectedTasks = { col1: null, col2: null, col3: null };
+                localStorage.removeItem('electricChallengeSelections');
+                render();
+            }
+        }
+
+        function setActiveTask(task) {
+            AppState.activeTask = task;
+            if (task) {
+                loadChecklist(task.id);
+            }
+            window.scrollTo(0, 0);
+            render();
+        }
+
+        // ===== TASK DATA =====
+        const TASKS = [
+            {
+                id: 'A', col: 1, row: 1,
+                title: "Power-Saving Action Plan",
+                color: "bg-gradient-to-b from-green-300 to-green-400",
+                emoji: "🔌",
+                expectations: "C1.1, C1.2",
+                summary: "Create a tri-fold brochure identifying ways to reduce electricity waste at school.",
+                intro: "You are an Investigative Journalist. Your mission is to report on the 'Power vs. Land' story of James Bay. You will create a professional 3-part brochure that looks at the history of this project and creates a plan for us to use power more wisely at school.",
+                details: [
+                    "Fold Your Paper: Fold a large 11x17 paper into three equal sections.",
+                    "Section 1: The James Bay Story. Research the James Bay Hydroelectric Project. Explain how the project changed the actual land (the rivers and forests) AND one specific way this project impacted the Cree or Inuit communities (think about their food, their travel, or their traditions).",
+                    "Section 2: The School Audit. Look around our classroom and school. Identify 3 specific ways we are currently wasting electricity every day.",
+                    "Section 3: The Advocacy Plan. Create a 3-step 'Action Plan' to convince our school to use electricity more responsibly. What can we change now?"
+                ],
+                materials: "11x17 paper, markers, research devices (computer/tablet)",
+                successCriteria: [
+                    "I explained how the James Bay project changed the environment for the Cree or Inuit people",
+                    "I identified 3 real ways our school wastes power",
+                    "I created a clear 3-step plan to help our school save electricity",
+                    "My brochure has bold headings, neat writing, and at least 2 labeled diagrams or drawings"
+                ],
+                layoutGuide: [
+                    "FRONT PANEL: Title (e.g., The James Bay Investigation) + Your Name & Drawing",
+                    "INSIDE LEFT: Section 1: The James Bay Story (Land & Indigenous Impacts)",
+                    "INSIDE MIDDLE: Section 2: School Energy Audit (The 3 Energy Leaks)",
+                    "INSIDE RIGHT: Section 3: My 3-Step Advocacy Plan"
+                ],
+                brochureTemplate: true
+            },
+            {
+                id: 'D', col: 1, row: 2,
+                title: "30-Second Energy Pitch",
+                color: "bg-gradient-to-b from-green-300 to-green-400",
+                emoji: "🎬",
+                expectations: "E1.2",
+                summary: "Record a high-energy PSA convincing classmates to save electricity.",
+                intro: "You are a professional advocate! Your mission is to record a high-energy message that convinces your classmates to change their habits and save electricity.",
+                details: [
+                    "Focus on the 'Why' and the 'How.' Why do we need to save power? How can we do it at school?",
+                    "Write a script that is exactly 30 seconds long.",
+                    "Record yourself (audio or video). Use a catchy slogan to make it stick in people's minds!"
+                ],
+                materials: "iPad/Chromebook with camera or voice recorder, script paper, timer",
+                successCriteria: [
+                    "I evaluated a specific choice we can make to save power",
+                    "I used a 'Call to Action' to invite others to join me",
+                    "My recording is clear, energetic, and exactly 30 seconds"
+                ],
+                psaStarters: [
+                    { section: "HOOK (Grab Attention!)", examples: ["Did you know that...", "What if I told you..."] },
+                    { section: "THE PROBLEM (Why It Matters)", examples: ["Right now, we're wasting electricity by..."] },
+                    { section: "THE SOLUTION (What We Can Do)", examples: ["Here's what we can do: ..."] },
+                    { section: "CALL TO ACTION (Get People Moving!)", examples: ["Join me in...", "Together, we can..."] }
+                ]
+            },
+            {
+                id: 'G', col: 1, row: 3,
+                title: "Future Electricity Postcard",
+                color: "bg-gradient-to-b from-green-300 to-green-400",
+                emoji: "📮",
+                expectations: "E1.1",
+                summary: "A postcard from 2075 showing a world powered by clean electricity.",
+                intro: "You've traveled to the year 2075! The world is clean and healthy. Send a postcard back to us in 2026 to tell us how we fixed things.",
+                details: [
+                    "Front: Draw your town in the future. Show things like solar panels, green buildings, and clean air.",
+                    "Back: Write a message to your 2026 self. Explain two big changes we made to stop climate change."
+                ],
+                materials: "4x6 blank cardstock, colored pencils or markers",
+                successCriteria: [
+                    "My drawing shows at least 3 ways the future uses clean energy",
+                    "My message explains how our choices today saved the future",
+                    "I used 'energy' words like conservation or sustainability"
+                ],
+                postcardTemplate: true
+            },
+            {
+                id: 'B', col: 2, row: 1,
+                title: "Electricity Source Comic",
+                color: "bg-gradient-to-b from-purple-300 to-purple-400",
+                emoji: "📚",
+                expectations: "E2.5, E2.6",
+                summary: "A 6-panel comic showing how electricity is generated and delivered.",
+                intro: "Become a comic book artist! Follow electricity's journey from its source (coal, wind, solar, etc.) all the way to powering a device in someone's home. Make it exciting!",
+                details: [
+                    "Choose one source: Coal Power Plant, Natural Gas, Solar Panels, or Wind Turbines.",
+                    "Panel 1-2: Show how this source generates electricity.",
+                    "Panel 3-4: Show how the electricity travels through power lines.",
+                    "Panel 5-6: Show the electricity powering a device in someone's home."
+                ],
+                materials: "Comic strip template, colored pencils",
+                successCriteria: [
+                    "My comic has all 6 panels filled in",
+                    "I clearly showed HOW my source makes electricity",
+                    "I showed electricity traveling through power lines",
+                    "My comic tells a complete story from source to home"
+                ]
+            },
+            {
+                id: 'E', col: 2, row: 2,
+                title: "The Great Electron Race",
+                color: "bg-gradient-to-b from-purple-300 to-purple-400",
+                emoji: "🎲",
+                expectations: "E2.5, E2.6",
+                summary: "Design a playable board game that uses a 'Race' analogy to show how electrons move through different materials.",
+                intro: "You are a Lead Game Designer. Your goal is to create The Great Electron Race—a board game where players act as electrons trying to reach the finish line. You will build the actual board AND write a 'Pro Playbook' (instruction manual) that explains the science behind your game.",
+                details: [
+                    "The Track: Draw a path of 15–20 squares on your cardstock. (Tip: Use a zig-zag or 'S' shape to fit them all on the page!)",
+                    "Special Effect Squares: Add 2 Static 'Jump' squares where players leap forward (based on real-life static electricity events like sparks or shocks). Add at least 2 Conductor squares (player moves forward or rolls again) and 2 Insulator squares (player is stopped or moved backward).",
+                    "The 'Championship' Finish Line: To win, players must pass a Material Challenge (correctly identifying a mystery object as a conductor or insulator) to cross the finish line.",
+                    "The Pro Playbook: On a separate sheet, write your instructions including: The Rules (how to move and win), Scientist's Corner (definitions for Static, Current, Conductor, and Insulator in your own words), and The Power Analogy (explain why players move forward on conductors and stop on insulators—how does this compare to a real electrical circuit?)."
+                ],
+                materials: "Large cardstock or poster board, markers, dice, game pieces, separate paper for Playbook",
+                successCriteria: [
+                    "I created a clear path of 15–20 squares that is colorful and ready to play",
+                    "I included 2 'jump' squares linked to real static electricity events",
+                    "I have at least 2 conductor squares and 2 insulator squares on my board",
+                    "I wrote a separate Playbook that explains how to play",
+                    "I defined Static, Current, Conductor, and Insulator in my own words",
+                    "I explained why moving forward on conductors and backward on insulators makes sense for a circuit",
+                    "My finish line requires a specific material-based challenge to win"
+                ]
+            },
+            {
+                id: 'H', col: 2, row: 3,
+                title: "Static vs. Current Showdown",
+                color: "bg-gradient-to-b from-purple-300 to-purple-400",
+                emoji: "🔍",
+                expectations: "E2.5, E2.6",
+                summary: "A Venn Diagram comparing Static Electricity vs Current Electricity.",
+                intro: "It's the ultimate electricity showdown! Static vs. Current—which is which? Use a Venn Diagram to put these two types of electricity head-to-head. How do they move? Where do we see them? What do they have in common?",
+                details: [
+                    "Draw two large overlapping circles (Venn Diagram). Label one 'Static Electricity' and one 'Current Electricity'.",
+                    "Compare and contrast: How do electrons move in each? How are they used? Where do we see them in real life?",
+                    "In the MIDDLE (overlapping) section: Write what they have in common.",
+                    "In the OUTSIDE sections (not overlapping): Write how they are different.",
+                    "Include a detailed drawing of one 'Static Trick' (like a balloon sticking to a wall, hair standing up, or a shock from a doorknob).",
+                    "Explain the science behind your static trick: Why do the electrons behave that way?"
+                ],
+                materials: "Large poster board or construction paper, markers, colored pencils",
+                successCriteria: [
+                    "I listed at least 3 differences and 2 similarities between static and current electricity",
+                    "I explained how electrons move in BOTH types of electricity",
+                    "My diagram of a static phenomenon (trick) is clear with labels",
+                    "I explained the science behind my static trick accurately"
+                ],
+                vennExamples: [
+                    {
+                        title: "Example 1: Cats vs. Dogs",
+                        leftCircle: "Cats", rightCircle: "Dogs",
+                        leftOnly: ["Meow", "Climb trees", "Use litter box", "Independent"],
+                        both: ["Have fur", "Four legs", "Are pets", "Need food & water"],
+                        rightOnly: ["Bark", "Play fetch", "Go on walks", "Very loyal"]
+                    },
+                    {
+                        title: "Example 2: Summer vs. Winter",
+                        leftCircle: "Summer", rightCircle: "Winter",
+                        leftOnly: ["Hot weather", "Swimming", "No school", "Long days"],
+                        both: ["Have holidays", "Time with family", "Outdoor activities", "Fun!"],
+                        rightOnly: ["Cold weather", "Snow", "Skiing", "Short days"]
+                    }
+                ]
+            },
+            {
+                id: 'C', col: 3, row: 1,
+                title: "The Electron's Journey",
+                color: "bg-gradient-to-b from-orange-300 to-orange-400",
+                emoji: "⚡",
+                expectations: "E2.2, E2.3",
+                summary: "Write a story from an electron's perspective traveling through a circuit.",
+                intro: "Imagine a tiny electron zipping through wires! Write a short story describing an electron's journey through a simple circuit. What happens when it hits the switch? What about when it reaches the lightbulb?",
+                details: [
+                    "Write a creative story about an electron traveling through a circuit.",
+                    "Describe the journey through a simple circuit with a battery, wires, switch, and lightbulb.",
+                    "Explain what happens when the switch is turned on.",
+                    "Describe what happens when the electron reaches the lightbulb and transforms into light.",
+                    "Your story should be at least 3 paragraphs (about 1 page), but no more than 2 pages."
+                ],
+                materials: "Writing paper or Google Docs, pencil or computer",
+                successCriteria: [
+                    "I wrote a creative story about an electron's journey",
+                    "I described the journey through all parts of the circuit (battery, wires, switch, lightbulb)",
+                    "I explained what happens when the switch turns on",
+                    "I described the electron transforming into light at the lightbulb",
+                    "My story is at least 3 paragraphs (about 1 page) but no more than 2 pages"
+                ]
+            },
+            {
+                id: 'F', col: 3, row: 2,
+                title: "Circuit All-Star Trading Cards",
+                color: "bg-gradient-to-b from-orange-300 to-orange-400",
+                emoji: "✨",
+                expectations: "E2.1, E2.3",
+                summary: "Design a 4-card collector's set that explains how a circuit works and what happens when a part stops working.",
+                intro: "You are designing a set of 'All-Star' trading cards for the four main parts of a circuit. Each card must be one-sided and include the artwork, the scientific symbol, and key data about that component.",
+                details: [
+                    "Create 4 cards: The Battery (Power Source), The Output Device (Lightbulb, Motor, or Buzzer), The Wires (The Path), and The Switch (The Gatekeeper).",
+                    "For each card, include: A colored drawing of the part, the official scientific symbol used in circuit diagrams, 'The Job' (1-sentence explanation of what this part does), and 'System Failure' (what happens to the whole circuit if this part is broken or missing).",
+                    "Make your cards colorful, neat, and use a consistent sports card style.",
+                    "Cards should be sized like real trading cards (approximately 2.5\" x 3.5\")."
+                ],
+                materials: "Cardstock rectangles (2.5\" x 3.5\"), colored pencils or markers, ruler",
+                successCriteria: [
+                    "I have all 4 cards: Battery, Output Device, Wires, and Switch",
+                    "Every card has the correct official circuit symbol drawn on it",
+                    "I explained what each part does in my own words (The Job)",
+                    "I explained exactly how the circuit breaks without that part (System Failure)",
+                    "My cards are colorful, neat, and use a consistent sports card style"
+                ],
+                cardTemplates: true
+            },
+            {
+                id: 'I', col: 3, row: 3,
+                title: "Circuit Tech Support Call",
+                color: "bg-gradient-to-b from-orange-300 to-orange-400",
+                emoji: "🎤",
+                expectations: "E2.4",
+                summary: "Analyze a broken circuit diagram and record a tech support call explaining how to fix it.",
+                intro: "Ring, ring! You're an Electrical Technician taking a tech support call. A customer sent you a diagram of their broken circuit—the lightbulb won't turn on! Study the circuit diagram, find ALL the problems, and record a 1-minute call walking them through how to fix it.",
+                details: [
+                    "Look at the circuit diagram below. There are MULTIPLE problems!",
+                    "Identify ALL the problems in the circuit. Are wires disconnected? Is the switch open? Is the battery placed backwards?",
+                    "Record a 1-minute 'Tech Support Call' where you walk the customer through checking all 4 circuit parts: Battery (the power source), Lightbulb (the load that uses energy), Wires (the conductors), and Switch (the control).",
+                    "Explain what each part does so the customer understands how electricity flows.",
+                    "Tell them step-by-step how to fix EACH problem you found.",
+                    "Use the script starters below to help you organize your call!"
+                ],
+                materials: "Circuit diagram (below), voice recorder app, script planning sheet",
+                successCriteria: [
+                    "I identified all 4 circuit parts: Battery, Lightbulb, Wires, and Switch",
+                    "I explained what each part does in the circuit",
+                    "I found ALL the problems in the diagram and explained how to fix each one",
+                    "My recording sounds professional and helpful (clear voice, organized, 1 minute)"
+                ],
+                scriptStarters: [
+                    "Hello! Thank you for calling Electrical Tech Support. Let me help you fix your circuit.",
+                    "I found [NUMBER] problems in your circuit. Here's how to fix them:",
+                    "Problem 1: [Explain what's wrong and how to fix it]",
+                    "Problem 2: [Explain what's wrong and how to fix it]",
+                    "Great! Once you fix these problems, your lightbulb should work. Thanks for calling!"
+                ],
+                circuitDiagram: true
+            }
+        ];
+
+        // ===== RENDER FUNCTIONS =====
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = AppState.activeTask ? renderDetailPage(AppState.activeTask) : renderHub();
+        }
+
+        function renderHub() {
+            const completionCount = getCompletionCount();
+            const col1Tasks = TASKS.filter(t => t.col === 1).sort((a, b) => a.row - b.row);
+            const col2Tasks = TASKS.filter(t => t.col === 2).sort((a, b) => a.row - b.row);
+            const col3Tasks = TASKS.filter(t => t.col === 3).sort((a, b) => a.row - b.row);
+
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-orange-100 via-blue-100 to-orange-50 p-4 md:p-8 font-sans relative overflow-hidden">
+                    <div class="absolute inset-0 opacity-10 pointer-events-none">
+                        <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                            <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                                <circle cx="10" cy="10" r="3" fill="#FF6B4A"/>
+                                <circle cx="90" cy="90" r="3" fill="#4A9FFF"/>
+                                <circle cx="50" cy="50" r="3" fill="#FFB84A"/>
+                                <line x1="10" y1="10" x2="50" y2="50" stroke="#4A9FFF" stroke-width="2"/>
+                                <line x1="50" y1="50" x2="90" y2="90" stroke="#FF6B4A" stroke-width="2"/>
+                            </pattern>
+                            <rect width="100%" height="100%" fill="url(#circuit)"/>
+                        </svg>
+                    </div>
+
+                    <div class="max-w-7xl mx-auto relative z-10">
+                        <header class="mb-8 text-center relative">
+                            <div class="flex justify-center gap-4 mb-4">
+                                <div class="w-16 h-20 bg-gradient-to-b from-blue-300 to-blue-500 rounded-full relative border-4 border-blue-700">
+                                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-200 rounded-full animate-pulse"></div>
+                                </div>
+                                <div class="w-16 h-20 bg-gradient-to-b from-orange-300 to-orange-500 rounded-full relative border-4 border-orange-700">
+                                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-200 rounded-full animate-pulse"></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-200 border-8 border-blue-900 rounded-3xl p-6 shadow-2xl inline-block">
+                                <p class="text-sm md:text-base font-black text-blue-900 uppercase tracking-widest mb-2">
+                                    Electricity Mission Choice Board
+                                </p>
+                                <div class="inline-block relative">
+                                    <h1 class="text-5xl md:text-7xl font-black text-red-500 tracking-tight" style="font-family: Arial Black, sans-serif; text-shadow: 4px 4px 0px #333;">
+                                        ELECTRICITY
+                                    </h1>
+                                    <div class="absolute -top-6 left-1/2" style="transform: translateX(-50%);">
+                                        <div class="text-5xl">⚡</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="text-lg md:text-xl text-slate-800 max-w-3xl mx-auto font-black leading-relaxed mt-6 bg-white/80 rounded-2xl p-4 border-4 border-slate-700">
+                                Pick <span class="bg-yellow-300 px-3 py-1 rounded-lg text-2xl border-2 border-yellow-600">ONE</span> mission from each color column!
+                            </p>
+                            
+                            <div class="mt-6 inline-flex items-center gap-4 bg-gradient-to-r from-orange-300 to-yellow-300 px-8 py-5 rounded-3xl shadow-xl border-4 border-orange-700 flex-wrap justify-center">
+                                <div class="text-5xl">🎯</div>
+                                <div class="text-left">
+                                    <p class="text-sm font-black text-orange-900 uppercase">Missions Selected</p>
+                                    <p class="text-4xl font-black text-blue-900">${completionCount} / 3</p>
+                                </div>
+                                ${completionCount === 3 ? `
+                                <div class="ml-4 bg-green-400 text-green-900 px-5 py-3 rounded-full font-black text-base border-4 border-green-700">
+                                    Ready to start! 🎉
+                                </div>
+                                ` : ''}
+                                ${completionCount > 0 ? `
+                                <button onclick="handleReset()" class="ml-2 bg-red-300 hover:bg-red-400 text-red-900 px-5 py-3 rounded-full font-black text-sm transition-all border-4 border-red-700" title="Clear all your choices">
+                                    🔄 Reset Missions
+                                </button>
+                                ` : ''}
+                            </div>
+                        </header>
+
+                        <div class="mb-8 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-2xl p-4 shadow-xl border-4 border-blue-900 max-w-3xl mx-auto">
+                            <h3 class="font-black text-xl text-blue-900 mb-3 text-center">
+                                🎮 Mission Briefing
+                            </h3>
+                            <div class="space-y-2">
+                                <div class="flex items-start gap-2">
+                                    <span class="font-black text-blue-900 text-lg shrink-0">1.</span>
+                                    <p class="font-black text-slate-900 text-sm md:text-base">Click any mission card to see your objectives</p>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="font-black text-purple-900 text-lg shrink-0">2.</span>
+                                    <p class="font-black text-slate-900 text-sm md:text-base">Choose ONE mission from EACH color zone</p>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="font-black text-orange-900 text-lg shrink-0">3.</span>
+                                    <p class="font-black text-slate-900 text-sm md:text-base">Complete all 3 missions to finish your quest!</p>
+                                </div>
+                            </div>
+                            <div class="bg-green-300 border-2 border-green-700 rounded-xl p-2 text-center mt-3">
+                                <p class="text-xs font-black text-green-900">
+                                    💾 Your mission selections are saved automatically!
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
+                            <div class="text-center">
+                                <div class="bg-gradient-to-b from-green-300 to-green-400 text-green-900 py-4 md:py-5 px-2 md:px-6 rounded-3xl font-black uppercase tracking-wider text-sm md:text-lg shadow-lg border-4 border-green-700">
+                                    <div class="text-4xl md:text-5xl mb-2">💡</div>
+                                    <div>Mission Zone 1</div>
+                                    <div class="text-xs font-bold normal-case mt-1">Impacts</div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="bg-gradient-to-b from-purple-300 to-purple-400 text-purple-900 py-4 md:py-5 px-2 md:px-6 rounded-3xl font-black uppercase tracking-wider text-sm md:text-lg shadow-lg border-4 border-purple-700">
+                                    <div class="text-4xl md:text-5xl mb-2">🔋</div>
+                                    <div>Mission Zone 2</div>
+                                    <div class="text-xs font-bold normal-case mt-1">Power Sources</div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="bg-gradient-to-b from-orange-300 to-orange-400 text-orange-900 py-4 md:py-5 px-2 md:px-6 rounded-3xl font-black uppercase tracking-wider text-sm md:text-lg shadow-lg border-4 border-orange-700">
+                                    <div class="text-4xl md:text-5xl mb-2">🔌</div>
+                                    <div>Mission Zone 3</div>
+                                    <div class="text-xs font-bold normal-case mt-1">Circuits</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3 md:gap-6 mb-8">
+                            <div class="space-y-3 md:space-y-6">
+                                ${col1Tasks.map(task => renderMissionCard(task)).join('')}
+                            </div>
+                            <div class="space-y-3 md:space-y-6">
+                                ${col2Tasks.map(task => renderMissionCard(task)).join('')}
+                            </div>
+                            <div class="space-y-3 md:space-y-6">
+                                ${col3Tasks.map(task => renderMissionCard(task)).join('')}
+                            </div>
+                        </div>
+
+                        <footer class="mt-12 bg-gradient-to-r from-yellow-200 to-orange-200 rounded-3xl p-6 md:p-8 border-8 border-orange-700 text-center shadow-xl">
+                            <div class="text-5xl mb-3">🎯</div>
+                            <p class="text-slate-900 font-black text-base md:text-xl">
+                                You'll have time in class to complete your 3 missions!
+                            </p>
+                            <p class="text-slate-800 font-black text-sm md:text-base mt-3">
+                                We'll showcase your work in a Gallery Walk! 🎨✨
+                            </p>
+                        </footer>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMissionCard(task) {
+            const selected = isSelected(task);
+            const borderColor = task.col === 1 ? 'border-green-700' : task.col === 2 ? 'border-purple-700' : 'border-orange-700';
+            
+            return `
+                <button
+                    onclick='setActiveTask(${JSON.stringify(task).replace(/'/g, "&apos;")})'
+                    class="${task.color} w-full text-left rounded-3xl p-3 md:p-4 shadow-xl transition-all hover:scale-105 hover:shadow-2xl active:scale-95 flex flex-col relative border-8 overflow-hidden cursor-pointer ${selected ? 'border-yellow-400' : borderColor}"
+                    style="height: 200px;">
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="text-3xl md:text-4xl drop-shadow-lg">
+                                ${task.emoji}
+                            </div>
+                            <div class="flex flex-col gap-1 items-end">
+                                <span class="font-black text-lg md:text-xl bg-white px-2 md:px-3 py-1 rounded-xl text-slate-900 shadow-lg border-3 border-slate-900">
+                                    ${task.id}
+                                </span>
+                                ${selected ? `
+                                <div class="bg-yellow-300 text-yellow-900 px-2 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-lg border-2 border-yellow-700">
+                                    ✓ Picked!
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-sm md:text-base lg:text-lg font-black mb-2 leading-tight text-slate-900">
+                            ${task.title}
+                        </h3>
+                        
+                        <p class="text-xs md:text-sm text-slate-800 leading-snug font-bold flex-grow">
+                            ${task.summary}
+                        </p>
+                    </div>
+                    
+                    <div class="absolute inset-0 bg-white/0 hover:bg-white/10 transition-all rounded-3xl pointer-events-none"></div>
+                </button>
+            `;
+        }
+
+        function renderDetailPage(task) {
+            const selected = isSelected(task);
+            const borderColor = task.col === 1 ? 'border-green-700' : task.col === 2 ? 'border-purple-700' : 'border-orange-700';
+            
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-orange-100 via-blue-100 to-orange-50 font-sans pb-12">
+                    <div class="${task.color} py-12 md:py-16 flex items-center justify-center relative border-b-8 ${borderColor}">
+                        <button 
+                            onclick="setActiveTask(null)"
+                            class="absolute top-6 left-6 bg-white text-slate-900 p-4 rounded-2xl shadow-xl hover:bg-slate-100 transition-all hover:scale-110 active:scale-95 z-20 border-4 border-slate-900 font-black">
+                            ←
+                        </button>
+
+                        <button
+                            onclick='handleTaskSelect(${JSON.stringify(task).replace(/'/g, "&apos;")})'
+                            class="absolute top-6 right-6 px-6 py-3 rounded-2xl shadow-xl font-black transition-all hover:scale-110 active:scale-95 z-20 flex items-center gap-2 border-4 ${selected ? 'bg-yellow-300 text-yellow-900 border-yellow-700' : 'bg-white text-slate-900 border-slate-900'}">
+                            ${selected ? '✓ Selected!' : '⭐ Select Mission'}
+                        </button>
+
+                        <div class="text-center px-4 relative z-10">
+                            <div class="text-7xl md:text-9xl mb-4">
+                                ${task.emoji}
+                            </div>
+                            <div class="inline-block bg-white px-8 py-3 rounded-full mb-3 border-4 border-slate-900 shadow-lg">
+                                <p class="font-black uppercase text-lg text-slate-900">Mission ${task.id}</p>
+                            </div>
+                            <h2 class="text-4xl md:text-6xl font-black text-slate-900 mb-4" style="font-family: Arial Black, sans-serif; text-shadow: 3px 3px 0px rgba(0,0,0,0.2);">${task.title}</h2>
+                        </div>
+                    </div>
+
+                    <div class="max-w-5xl mx-auto px-6 md:px-12 -mt-10 relative z-10">
+                        <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-10 border-8 border-slate-900">
+                            <div class="flex justify-end mb-4">
+                                <div class="bg-slate-100 px-3 py-1 rounded-full border-2 border-slate-300">
+                                    <p class="text-xs font-bold text-slate-500">Curriculum: ${task.expectations}</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                                    <span class="text-4xl">📖</span> What is this?
+                                </h3>
+                                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border-4 border-blue-300">
+                                    <p class="text-base md:text-lg text-slate-800 leading-relaxed font-bold">
+                                        ${task.intro}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                                    <span class="text-4xl">🎒</span> Mission Gear - The Must-Haves
+                                </h3>
+                                <div class="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-2xl p-6 border-4 border-yellow-600 shadow-lg">
+                                    <p class="text-base md:text-lg text-slate-900 font-black">
+                                        ${task.materials}
+                                    </p>
+                                    <p class="text-sm text-slate-700 font-bold mt-2 italic">
+                                        (You can also be creative and use other materials you need!)
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                                    <span class="text-4xl">📋</span> Instructions
+                                </h3>
+                                <div class="space-y-4">
+                                    ${task.details.map((detail, i) => `
+                                        <div class="flex gap-4 p-5 rounded-2xl bg-gradient-to-r from-blue-100 to-cyan-100 border-4 border-blue-700 shadow-lg">
+                                            <div class="flex items-center justify-center bg-gradient-to-b from-blue-500 to-blue-700 text-white w-10 h-10 rounded-2xl font-black text-xl shrink-0 shadow-lg border-2 border-blue-900">
+                                                ${i + 1}
+                                            </div>
+                                            <p class="text-base text-slate-900 leading-relaxed font-bold flex-1">
+                                                ${detail}
+                                            </p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            ${task.psaStarters ? renderPSAStarters(task.psaStarters) : ''}
+                            ${task.layoutGuide ? renderLayoutGuide(task.layoutGuide) : ''}
+                            ${task.postcardTemplate ? renderPostcardTemplate() : ''}
+                            ${task.brochureTemplate ? renderBrochureTemplate() : ''}
+                            ${task.cardTemplates ? renderCardTemplates() : ''}
+                            ${task.vennExamples ? renderVennExamples(task.vennExamples) : ''}
+                            ${task.circuitDiagram ? renderCircuitDiagram() : ''}
+                            ${task.scriptStarters ? renderScriptStarters(task.scriptStarters) : ''}
+
+                            <div class="mb-8">
+                                <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                                    <span class="text-4xl">✅</span> Success Checklist
+                                </h3>
+                                <div class="bg-gradient-to-r from-green-100 to-emerald-100 rounded-2xl p-6 border-4 border-green-600 shadow-lg">
+                                    <p class="text-sm font-black text-green-900 mb-4">Check off each item as you complete it!</p>
+                                    <div class="space-y-3">
+                                        ${task.successCriteria.map((criterion, i) => `
+                                            <label class="flex items-start gap-3 p-4 bg-white rounded-xl border-2 border-green-300 cursor-pointer hover:bg-green-50 transition-all">
+                                                <input
+                                                    type="checkbox"
+                                                    ${AppState.checklistState[i] ? 'checked' : ''}
+                                                    onchange="toggleCheckbox('${task.id}', ${i})"
+                                                    class="w-6 h-6 mt-1 cursor-pointer accent-green-600 shrink-0">
+                                                <span class="text-base font-bold ${AppState.checklistState[i] ? 'text-green-700 line-through' : 'text-slate-900'}">
+                                                    ${criterion}
+                                                </span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                                <button 
+                                    onclick='handleTaskSelect(${JSON.stringify(task).replace(/'/g, "&apos;")}); setActiveTask(null);'
+                                    class="px-10 py-5 rounded-3xl font-black text-lg transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl border-4 ${selected ? 'bg-yellow-300 text-yellow-900 border-yellow-700 hover:bg-yellow-400' : 'bg-gradient-to-b from-blue-400 to-blue-600 text-white border-blue-900 hover:from-blue-500 hover:to-blue-700'}">
+                                    ${selected ? '✓ Mission Accepted!' : '⭐ Accept This Mission'}
+                                </button>
+                                
+                                <button 
+                                    onclick="setActiveTask(null)"
+                                    class="bg-white text-slate-900 px-10 py-5 rounded-3xl font-black text-lg hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-3 border-4 border-slate-900 shadow-xl">
+                                    ← Back to Mission Select
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPSAStarters(starters) {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">🎙️</span> How to Build Your PSA - Sentence Starters
+                    </h3>
+                    <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
+                        Use these sentence starters to help you write your 30-second script!
+                    </p>
+                    <div class="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
+                        <p class="text-sm font-black text-blue-900">
+                            💡 These are just IDEAS to help you! You can write your PSA any way you want!
+                        </p>
+                    </div>
+                    <div class="space-y-4">
+                        ${starters.map((starter) => `
+                            <div class="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-5 border-4 border-orange-400 shadow-lg">
+                                <h4 class="text-lg font-black text-orange-900 mb-3">${starter.section}</h4>
+                                <div class="space-y-2">
+                                    ${starter.examples.map((example) => `
+                                        <div class="bg-white rounded-xl p-3 border-2 border-orange-200">
+                                            <p class="text-sm md:text-base text-slate-900 font-bold italic">
+                                                "${example}"
+                                            </p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderLayoutGuide(guide) {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">🖼️</span> Layout Guide for Your Brochure
+                    </h3>
+                    <div class="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-2xl p-6 border-4 border-blue-600 shadow-lg">
+                        <div class="space-y-3">
+                            ${guide.map((section) => `
+                                <div class="bg-white rounded-xl p-4 border-2 border-blue-300">
+                                    <p class="text-sm md:text-base text-slate-900 font-bold">
+                                        ${section}
+                                    </p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScriptStarters(starters) {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">💬</span> Script Starters (Use These to Help!)
+                    </h3>
+                    <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 border-4 border-purple-600 shadow-lg">
+                        <div class="space-y-3">
+                            ${starters.map((starter) => `
+                                <div class="bg-white rounded-xl p-4 border-2 border-purple-300">
+                                    <p class="text-sm md:text-base text-slate-900 font-bold italic">
+                                        "${starter}"
+                                    </p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render functions for templates (due to size, I'll add simplified versions)
+        function renderPostcardTemplate() {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">📮</span> Postcard Template Guide
+                    </h3>
+                    <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
+                        Here's what a postcard looks like! Use a 4" x 6" card or cardstock.
+                    </p>
+                    <div class="bg-white rounded-2xl p-6 border-4 border-blue-600 shadow-lg">
+                        <svg viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                            <style>
+                              .card-border { fill: #ffffff; stroke: #000000; stroke-width: 3; }
+                              .section-box { fill: none; stroke: #000000; stroke-width: 2; }
+                              .label { fill: #666666; font-family: sans-serif; font-size: 14px; font-style: italic; }
+                              .header { fill: #000000; font-family: sans-serif; font-size: 18px; font-weight: bold; }
+                              .big-text { fill: #000000; font-family: sans-serif; font-size: 16px; font-weight: bold; }
+                              .divider { stroke: #000000; stroke-width: 2; stroke-dasharray: 5,5; }
+                            </style>
+                            <text x="550" y="30" text-anchor="middle" class="header" font-size="24px">POSTCARD TEMPLATE (4" x 6")</text>
+                            <g>
+                              <text x="275" y="70" text-anchor="middle" class="header" font-size="20px">FRONT</text>
+                              <rect x="50" y="90" width="450" height="300" class="card-border"/>
+                              <rect x="70" y="110" width="410" height="260" class="section-box"/>
+                              <text x="275" y="220" text-anchor="middle" class="header" font-size="28px">MAIN IMAGE</text>
+                              <text x="275" y="255" text-anchor="middle" class="label">Draw or paste your picture here</text>
+                              <text x="275" y="280" text-anchor="middle" class="label">Make it colorful!</text>
+                            </g>
+                            <g>
+                              <text x="775" y="70" text-anchor="middle" class="header" font-size="20px">BACK</text>
+                              <rect x="550" y="90" width="450" height="300" class="card-border"/>
+                              <line x1="775" y1="110" x2="775" y2="370" class="divider"/>
+                              <text x="570" y="130" class="big-text">Message:</text>
+                              <line x1="570" y1="155" x2="755" y2="155" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="185" x2="755" y2="185" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="215" x2="755" y2="215" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="245" x2="755" y2="245" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="275" x2="755" y2="275" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="305" x2="755" y2="305" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="335" x2="755" y2="335" stroke="#cccccc" stroke-width="1"/>
+                              <line x1="570" y1="365" x2="755" y2="365" stroke="#cccccc" stroke-width="1"/>
+                              <rect x="910" y="110" width="70" height="60" class="section-box"/>
+                              <text x="945" y="135" text-anchor="middle" class="label" font-size="11px">STAMP</text>
+                              <text x="945" y="150" text-anchor="middle" class="label" font-size="11px">HERE</text>
+                              <line x1="795" y1="190" x2="980" y2="190" stroke="#000000" stroke-width="1"/>
+                              <line x1="795" y1="220" x2="980" y2="220" stroke="#000000" stroke-width="1"/>
+                              <line x1="795" y1="250" x2="980" y2="250" stroke="#000000" stroke-width="1"/>
+                              <line x1="795" y1="280" x2="980" y2="280" stroke="#000000" stroke-width="1"/>
+                              <line x1="795" y1="310" x2="980" y2="310" stroke="#000000" stroke-width="1"/>
+                              <line x1="795" y1="340" x2="980" y2="340" stroke="#000000" stroke-width="1"/>
+                            </g>
+                            <text x="550" y="430" text-anchor="middle" class="label" font-size="13px">From: ____________________  Class: __________  Date: __________</text>
+                        </svg>
+                    </div>
+                </div>
+            `;
+        }
+
+                function renderBrochureTemplate() {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">📄</span> Brochure Template Guide
+                    </h3>
+                    <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
+                        Here's how to fold and fill in your tri-fold brochure!
+                    </p>
+                    
+                    <div class="bg-white rounded-2xl p-6 border-4 border-blue-600 shadow-lg mb-6">
+                        <h4 class="text-xl font-black text-blue-900 mb-4 text-center">OUTSIDE (When Closed)</h4>
+                        <svg viewBox="0 0 1100 850" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                            <style>
+                              .panel-border { fill: #ffffff; stroke: #000000; stroke-width: 3; }
+                              .section-box { fill: none; stroke: #000000; stroke-width: 2; }
+                              .label { fill: #666666; font-family: sans-serif; font-size: 14px; font-style: italic; }
+                              .header { fill: #000000; font-family: sans-serif; font-size: 18px; font-weight: bold; }
+                              .big-text { fill: #000000; font-family: sans-serif; font-size: 16px; font-weight: bold; }
+                              .fold-line { stroke: #cccccc; stroke-width: 1; stroke-dasharray: 5,5; }
+                            </style>
+                            <text x="550" y="30" text-anchor="middle" class="header" font-size="24px">ELECTRICITY BROCHURE - OUTSIDE</text>
+                            <line x1="367" y1="50" x2="367" y2="850" class="fold-line"/>
+                            <line x1="733" y1="50" x2="733" y2="850" class="fold-line"/>
+                            <g>
+                              <text x="183.5" y="90" text-anchor="middle" class="header" font-size="20px">BACK PANEL</text>
+                              <text x="183.5" y="120" text-anchor="middle" class="label">(Optional - you can leave this blank)</text>
+                              <rect x="40" y="160" width="287" height="300" class="section-box"/>
+                              <text x="183.5" y="200" text-anchor="middle" class="big-text">Extra Info (Optional)</text>
+                              <text x="50" y="240" class="label">• Cool facts about electricity</text>
+                              <text x="50" y="270" class="label">• Tips for saving energy</text>
+                              <text x="50" y="300" class="label">• Drawing or picture</text>
+                              <rect x="40" y="490" width="287" height="280" class="section-box"/>
+                              <text x="183.5" y="530" text-anchor="middle" class="big-text">Sources / Credits</text>
+                              <text x="50" y="570" class="label">List your sources:</text>
+                              <text x="50" y="600" class="label">• Books you used</text>
+                              <text x="50" y="630" class="label">• Websites you visited</text>
+                              <text x="50" y="660" class="label">• People you interviewed</text>
+                            </g>
+                            <g>
+                              <text x="550" y="280" text-anchor="middle" class="header" font-size="20px">BACK COVER</text>
+                              <text x="550" y="320" text-anchor="middle" class="label">(Usually left blank)</text>
+                              <text x="550" y="350" text-anchor="middle" class="label">Or add a small picture/design</text>
+                              <rect x="450" y="400" width="200" height="200" class="section-box"/>
+                              <text x="550" y="510" text-anchor="middle" class="label">Optional decoration</text>
+                            </g>
+                            <g>
+                              <text x="916.5" y="80" text-anchor="middle" class="header" font-size="20px">FRONT COVER ⭐</text>
+                              <text x="916.5" y="110" text-anchor="middle" class="label">(THIS IS MOST IMPORTANT!)</text>
+                              <rect x="773" y="140" width="287" height="160" class="section-box"/>
+                              <text x="916.5" y="180" text-anchor="middle" class="header" font-size="22px">YOUR TITLE</text>
+                              <text x="916.5" y="215" text-anchor="middle" class="label">Make it BIG and about electricity!</text>
+                              <text x="916.5" y="245" text-anchor="middle" class="label">Example: "Power Up Responsibly!"</text>
+                              <text x="916.5" y="275" text-anchor="middle" class="label">Use markers or colored pencils!</text>
+                              <rect x="773" y="320" width="287" height="300" class="section-box"/>
+                              <text x="916.5" y="400" text-anchor="middle" class="header" font-size="22px">MAIN PICTURE</text>
+                              <text x="916.5" y="440" text-anchor="middle" class="label">Draw something about electricity:</text>
+                              <text x="916.5" y="470" text-anchor="middle" class="label">• Light bulb, power lines, dam</text>
+                              <text x="916.5" y="500" text-anchor="middle" class="label">• Make it colorful!</text>
+                              <text x="916.5" y="530" text-anchor="middle" class="label">• This grabs people's attention!</text>
+                              <rect x="773" y="640" width="287" height="160" class="section-box"/>
+                              <text x="916.5" y="685" text-anchor="middle" class="big-text">By: ___________________</text>
+                              <text x="916.5" y="730" text-anchor="middle" class="big-text">Class: ______  Date: ______</text>
+                            </g>
+                            <text x="550" y="820" text-anchor="middle" class="header" font-size="14px">This is what people see when your brochure is CLOSED</text>
+                            <text x="550" y="845" text-anchor="middle" class="label">Fold along the dotted lines (don't cut!)</text>
+                        </svg>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 border-4 border-blue-600 shadow-lg">
+                        <h4 class="text-xl font-black text-blue-900 mb-4 text-center">INSIDE (When Open)</h4>
+                        <svg viewBox="0 0 1100 850" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                            <style>
+                              .panel-border { fill: #ffffff; stroke: #000000; stroke-width: 3; }
+                              .section-box { fill: none; stroke: #000000; stroke-width: 2; }
+                              .label { fill: #666666; font-family: sans-serif; font-size: 14px; font-style: italic; }
+                              .header { fill: #000000; font-family: sans-serif; font-size: 18px; font-weight: bold; }
+                              .big-text { fill: #000000; font-family: sans-serif; font-size: 16px; font-weight: bold; }
+                              .fold-line { stroke: #cccccc; stroke-width: 1; stroke-dasharray: 5,5; }
+                            </style>
+                            <text x="550" y="30" text-anchor="middle" class="header" font-size="24px">ELECTRICITY BROCHURE - INSIDE</text>
+                            <line x1="367" y1="50" x2="367" y2="850" class="fold-line"/>
+                            <line x1="733" y1="50" x2="733" y2="850" class="fold-line"/>
+                            <g>
+                              <text x="183.5" y="80" text-anchor="middle" class="header" font-size="20px">SECTION 1 📚</text>
+                              <text x="183.5" y="110" text-anchor="middle" class="big-text">The James Bay Story</text>
+                              <text x="183.5" y="135" text-anchor="middle" class="label">(Land & Indigenous Impacts)</text>
+                              <rect x="40" y="170" width="287" height="600" class="section-box"/>
+                              <text x="50" y="210" class="big-text">What happened to the land?</text>
+                              <text x="50" y="250" class="label">• How were rivers changed?</text>
+                              <text x="50" y="280" class="label">• What happened to forests?</text>
+                              <text x="50" y="310" class="label">• Draw a before/after diagram</text>
+                              <text x="50" y="370" class="big-text">Impact on Communities:</text>
+                              <text x="50" y="410" class="label">Choose ONE impact on the</text>
+                              <text x="50" y="440" class="label">Cree or Inuit people:</text>
+                              <text x="50" y="470" class="label">• Food sources</text>
+                              <text x="50" y="500" class="label">• Travel routes</text>
+                              <text x="50" y="530" class="label">• Traditional way of life</text>
+                              <text x="50" y="590" class="label">Add pictures or diagrams!</text>
+                              <text x="50" y="620" class="label">Use your research to explain</text>
+                              <text x="50" y="650" class="label">what changed and why it mattered</text>
+                            </g>
+                            <g>
+                              <text x="550" y="80" text-anchor="middle" class="header" font-size="20px">SECTION 2 🔍</text>
+                              <text x="550" y="110" text-anchor="middle" class="big-text">School Energy Audit</text>
+                              <text x="550" y="135" text-anchor="middle" class="label">(The 3 Energy Leaks)</text>
+                              <rect x="407" y="170" width="286" height="600" class="section-box"/>
+                              <text x="420" y="210" class="big-text">Where We Waste Electricity:</text>
+                              <text x="420" y="260" class="big-text">1. ____________________</text>
+                              <text x="420" y="290" class="label">Example: Lights left on in empty rooms</text>
+                              <text x="420" y="320" class="label">or computers not shut down</text>
+                              <text x="420" y="380" class="big-text">2. ____________________</text>
+                              <text x="420" y="410" class="label">Example: Doors left open with</text>
+                              <text x="420" y="440" class="label">heat or AC running</text>
+                              <text x="420" y="500" class="big-text">3. ____________________</text>
+                              <text x="420" y="530" class="label">Example: Too many devices</text>
+                              <text x="420" y="560" class="label">plugged in and charging</text>
+                              <text x="420" y="620" class="label">Walk around your school!</text>
+                              <text x="420" y="650" class="label">Find REAL examples you see</text>
+                            </g>
+                            <g>
+                              <text x="916.5" y="80" text-anchor="middle" class="header" font-size="20px">SECTION 3 💡</text>
+                              <text x="916.5" y="110" text-anchor="middle" class="big-text">My 3-Step Advocacy Plan</text>
+                              <text x="916.5" y="135" text-anchor="middle" class="label">(Solutions We Can Start NOW)</text>
+                              <rect x="773" y="170" width="287" height="600" class="section-box"/>
+                              <text x="783" y="210" class="big-text">STEP 1:</text>
+                              <text x="783" y="240" class="label">What can we change?</text>
+                              <text x="783" y="270" class="label">_____________________</text>
+                              <text x="783" y="300" class="label">_____________________</text>
+                              <text x="783" y="360" class="big-text">STEP 2:</text>
+                              <text x="783" y="390" class="label">Who needs to help make it happen?</text>
+                              <text x="783" y="420" class="label">_____________________</text>
+                              <text x="783" y="450" class="label">_____________________</text>
+                              <text x="783" y="510" class="big-text">STEP 3:</text>
+                              <text x="783" y="540" class="label">How will we get people on board?</text>
+                              <text x="783" y="570" class="label">_____________________</text>
+                              <text x="783" y="600" class="label">_____________________</text>
+                              <text x="783" y="660" class="label">Be specific! Make it realistic!</text>
+                              <text x="783" y="690" class="label">Think about what our school</text>
+                              <text x="783" y="720" class="label">can actually DO right away</text>
+                            </g>
+                            <text x="550" y="820" text-anchor="middle" class="header" font-size="14px">This is what people see when your brochure is OPENED</text>
+                            <text x="550" y="845" text-anchor="middle" class="label">Fill in all three sections with research, drawings, and your plan!</text>
+                        </svg>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCardTemplates() {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">🃏</span> Trading Card Template Ideas
+                    </h3>
+                    <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
+                        Here are 3 template ideas to inspire your card design! You can use one of these or create your own unique style.
+                    </p>
+                    <div class="bg-white rounded-2xl p-6 border-4 border-purple-400 shadow-lg">
+                        <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                    <style>
+                      .card-bg { fill: #ffffff; stroke: #2c2c2a; stroke-width: 3; }
+                      .section-box { fill: #f8f7f3; stroke: #73726c; stroke-width: 1; }
+                      .header { fill: #191918; font-family: sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; }
+                      .label { fill: #3d3d3a; font-family: sans-serif; font-size: 9px; font-weight: bold; }
+                      .star { fill: #191918; opacity: 0.1; }
+                      .symbol-badge { fill: #f8f7f3; stroke: #191918; stroke-width: 2; }
+                      .light-header { fill: #d3d1c7; stroke: #73726c; stroke-width: 2; }
+                    </style>
+
+                    {/* TEMPLATE 1: Classic Layout */}
+                    <g transform="translate(10, 10)">
+                      <rect x="0" y="0" width="240" height="340" rx="8" class="card-bg"/>
+                      <rect x="10" y="10" width="220" height="35" rx="4" class="light-header"/>
+                      <text class="header" x="100" y="32">NAME</text>
+                      <circle cx="200" cy="27" r="22" class="symbol-badge"/>
+                      <text class="label" x="200" y="31" textAnchor="middle" fontSize="7px">SYMBOL</text>
+                      <rect x="10" y="55" width="220" height="150" rx="4" class="section-box"/>
+                      <text class="label" x="15" y="68">DRAWING / ACTION SHOT:</text>
+                      <rect x="10" y="215" width="220" height="50" rx="4" class="section-box"/>
+                      <text class="label" x="15" y="228">THE JOB:</text>
+                      <rect x="10" y="275" width="220" height="55" rx="4" class="section-box"/>
+                      <text class="label" x="15" y="288">SYSTEM FAILURE:</text>
+                      <text x="120" y="358" textAnchor="middle" fontFamily="sans-serif" fontSize="11px" fontWeight="bold" fill="#73726c">TEMPLATE 1</text>
+                    </g>
+
+                    {/* TEMPLATE 2: Sports Card Style */}
+                    <g transform="translate(280, 10)">
+                      <rect x="0" y="0" width="240" height="340" rx="8" class="card-bg"/>
+                      <path d="M10 10 L230 10 L220 40 L10 40 Z" class="light-header"/>
+                      <text class="header" x="125" y="30">NAME</text>
+                      <rect x="14" y="13" width="45" height="30" rx="4" class="symbol-badge"/>
+                      <text class="label" x="36.5" y="29" textAnchor="middle" fontSize="7px">SYMBOL</text>
+                      <rect x="10" y="50" width="220" height="155" rx="4" class="section-box"/>
+                      <text class="label" x="15" y="63">DRAWING / ACTION SHOT:</text>
+                      <rect x="10" y="215" width="220" height="50" rx="4" class="section-box"/>
+                      <text class="label" x="15" y="228">THE JOB:</text>
+                      <rect x="10" y="275" width="220" height="55" rx="4" class="section-box"/>
+                      <text class="label" x="15" y="288">SYSTEM FAILURE:</text>
+                      <circle cx="220" cy="325" r="8" fill="#191918" opacity="0.2"/>
+                      <text x="120" y="358" textAnchor="middle" fontFamily="sans-serif" fontSize="11px" fontWeight="bold" fill="#73726c">TEMPLATE 2</text>
+                    </g>
+
+                    {/* TEMPLATE 3: All-Star Stats Card */}
+                    <g transform="translate(550, 10)">
+                      <rect x="0" y="0" width="240" height="340" rx="8" class="card-bg"/>
+                      <rect x="5" y="5" width="230" height="330" rx="6" fill="none" stroke="#73726c" strokeWidth="1"/>
+                      <polygon points="15,15 17,21 23,21 18,25 20,31 15,27 10,31 12,25 7,21 13,21" class="star"/>
+                      <polygon points="225,15 223,21 217,21 222,25 220,31 225,27 230,31 228,25 233,21 227,21" class="star"/>
+                      <circle cx="120" cy="35" r="24" class="light-header"/>
+                      <text class="header" x="120" y="40" fontSize="13px">NAME</text>
+                      <circle cx="210" cy="30" r="15" class="symbol-badge"/>
+                      <text class="label" x="210" y="33" textAnchor="middle" fontSize="7px">SYMBOL</text>
+                      <rect x="15" y="70" width="210" height="145" rx="4" class="section-box"/>
+                      <text class="label" x="20" y="83">DRAWING / ACTION SHOT:</text>
+                      <rect x="15" y="225" width="210" height="45" rx="4" class="section-box"/>
+                      <text x="20" y="238" fontFamily="sans-serif" fontSize="9px" fontWeight="bold" fill="#3d3d3a">THE JOB:</text>
+                      <rect x="15" y="280" width="210" height="50" rx="4" class="section-box"/>
+                      <text x="20" y="293" fontFamily="sans-serif" fontSize="9px" fontWeight="bold" fill="#3d3d3a">SYSTEM FAILURE:</text>
+                      <text x="120" y="358" textAnchor="middle" fontFamily="sans-serif" fontSize="11px" fontWeight="bold" fill="#73726c">TEMPLATE 3</text>
+                    </g>
+                  </svg>
+                    </div>
+                    <div class="mt-6 bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
+                        <p class="text-sm font-black text-blue-900">
+                            💡 You can use one of these templates OR create your own unique design! The important part is including all the required sections.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+                function renderVennExamples(examples) {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">📊</span> Venn Diagram Examples (Learn How!)
+                    </h3>
+                    <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
+                        Not sure how to make a Venn Diagram? Check out these examples to see how it works!
+                    </p>
+                    <div class="space-y-8">
+                        ${examples.map((example) => `
+                            <div class="bg-white rounded-2xl p-6 border-4 border-blue-400 shadow-lg">
+                                <h4 class="text-lg md:text-xl font-black text-blue-900 mb-6 text-center">${example.title}</h4>
+                                
+                                <div class="relative w-full bg-white" style="height: 500px">
+                                    <svg viewBox="0 0 800 500" class="w-full h-full">
+                                        <circle cx="300" cy="250" r="180" fill="#ffc0cb" stroke="#ec4899" stroke-width="5" opacity="0.5"/>
+                                        <circle cx="500" cy="250" r="180" fill="#add8e6" stroke="#3b82f6" stroke-width="5" opacity="0.5"/>
+                                        
+                                        <text x="220" y="100" font-size="24" font-weight="bold" fill="#ec4899" text-anchor="middle">
+                                            ${example.leftCircle}
+                                        </text>
+                                        
+                                        <text x="580" y="100" font-size="24" font-weight="bold" fill="#3b82f6" text-anchor="middle">
+                                            ${example.rightCircle}
+                                        </text>
+                                        
+                                        ${example.leftOnly.map((item, i) => `
+                                            <text x="210" y="${180 + i * 35}" font-size="16" font-weight="600" fill="#1f2937">
+                                                • ${item}
+                                            </text>
+                                        `).join('')}
+                                        
+                                        <text x="400" y="180" font-size="18" font-weight="bold" fill="#9333ea" text-anchor="middle">
+                                            BOTH:
+                                        </text>
+                                        ${example.both.map((item, i) => `
+                                            <text x="400" y="${210 + i * 32}" font-size="15" font-weight="600" fill="#1f2937" text-anchor="middle">
+                                                • ${item}
+                                            </text>
+                                        `).join('')}
+                                        
+                                        ${example.rightOnly.map((item, i) => `
+                                            <text x="550" y="${180 + i * 35}" font-size="16" font-weight="600" fill="#1f2937">
+                                                • ${item}
+                                            </text>
+                                        `).join('')}
+                                    </svg>
+                                </div>
+                                
+                                <div class="mt-4 flex justify-center gap-6 text-sm font-bold">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-pink-300 border-2 border-pink-600"></div>
+                                        <span>${example.leftCircle} only</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-purple-300 border-2 border-purple-600"></div>
+                                        <span>Both</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-blue-300 border-2 border-blue-600"></div>
+                                        <span>${example.rightCircle} only</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCircuitDiagram() {
+            return `
+                <div class="mb-8">
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-4 flex items-center gap-3">
+                        <span class="text-4xl">⚡</span> Circuit Diagram - Find the Problems!
+                    </h3>
+                    <div class="bg-white rounded-2xl p-6 border-4 border-orange-400 shadow-lg">
+                        <p class="text-sm md:text-base text-slate-700 font-bold mb-4">
+                            Study this circuit carefully. There are 3 problems preventing the lightbulb from turning on!
+                        </p>
+                        <div class="bg-slate-50 rounded-xl p-4 border-2 border-slate-300 flex justify-center items-center">
+                            <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+<style>
+@media (prefers-color-scheme: dark) {
+  .wire { stroke: #c2c0b6; }
+}
+@media (prefers-color-scheme: light) {
+  .wire { stroke: #3d3d3a; }
+}
+.wire { stroke-width: 3; stroke-linecap: round; fill: none; }
+</style>
+<!-- Main loop top wire -->
+<line x1="100" y1="150" x2="700" y2="150" class="wire"/>
+<!-- Left side down -->
+<line x1="100" y1="150" x2="100" y2="500" class="wire"/>
+<!-- Right side down -->
+<line x1="700" y1="150" x2="700" y2="500" class="wire"/>
+<!-- ERROR 1: Missing Battery - just a gap in the bottom wire -->
+<line x1="140" y1="500" x2="700" y2="500" class="wire"/>
+<!-- ERROR 2: Open Switch in left wire -->
+<line x1="100" y1="150" x2="100" y2="270" class="wire"/>
+<!-- Switch symbol - OPEN position -->
+<line x1="100" y1="270" x2="100" y2="290" class="wire"/>
+<line x1="100" y1="290" x2="120" y2="310" class="wire"/>
+<circle cx="100" cy="290" r="4" class="wire" fill="currentColor"/>
+<circle cx="100" cy="330" r="4" class="wire" fill="currentColor"/>
+<line x1="100" y1="330" x2="100" y2="350" class="wire"/>
+<line x1="100" y1="350" x2="100" y2="500" class="wire"/>
+<!-- Branch to Bulb 1 -->
+<circle cx="300" cy="150" r="4" class="wire" fill="currentColor"/>
+<line x1="300" y1="150" x2="300" y2="250" class="wire"/>
+<!-- Bulb 1 -->
+<circle cx="300" cy="300" r="35" fill="none" class="wire" stroke-width="2"/>
+<path d="M275 280 L300 300 L325 320 M275 320 L300 300 L325 280" class="wire" stroke-width="2"/>
+<!-- Continue from Bulb 1 to bottom -->
+<line x1="300" y1="335" x2="300" y2="500" class="wire"/>
+<!-- Branch to Bulb 2 -->
+<circle cx="500" cy="150" r="4" class="wire" fill="currentColor"/>
+<line x1="500" y1="150" x2="500" y2="250" class="wire"/>
+<!-- Bulb 2 -->
+<circle cx="500" cy="300" r="35" fill="none" class="wire" stroke-width="2"/>
+<path d="M475 280 L500 300 L525 320 M475 320 L500 300 L525 280" class="wire" stroke-width="2"/>
+<!-- ERROR 3: Gap in wire (loose connection) -->
+<line x1="500" y1="335" x2="500" y2="450" class="wire"/>
+<!-- Visible gap -->
+<line x1="500" y1="470" x2="500" y2="500" class="wire"/>
+</svg>
+                        </div>
+                        <div class="mt-4 bg-red-50 border-2 border-red-300 rounded-xl p-4">
+                            <p class="text-sm font-black text-red-900">
+                                🔍 Hint: Look carefully at the battery location, switch position, and wire connections!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initial render
+        window.onload = () => {
+            render();
+        };
+    </script>
+</body>
+</html>
